@@ -1,0 +1,100 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
+        os: [ubuntu-latest, windows-latest]
+    env:
+      MONGODB_URI: mongodb://127.0.0.1:27017/unit_tests
+      MONGODB_DATABASE: unit_tests
+      DAILY_REPORT_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: tests/requirements-unit.txt
+      - name: Install test dependencies
+        run: python -m pip install -r tests/requirements-unit.txt
+      - name: Reject tracked runtime configuration and captures
+        run: |
+          if [ -n "$(git ls-files -- .env infrastructure/database/mongodb/cameras.json infrastructure/storage)" ]; then
+            echo "Runtime configuration and captures must not be tracked."
+            exit 1
+          fi
+      - name: Compile application sources
+        run: python -m compileall -q application config domain infrastructure services main.py
+      - name: Run isolated unit tests
+        run: python -m pytest
+      - name: Check whitespace
+        run: git diff-tree --root --check HEAD
+
+  containers:
+    needs: unit
+    if: github.event_name != 'push' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MONGO_INITDB_ROOT_PASSWORD: ci-only-password
+      DOCKER_MONGODB_URI: mongodb://admin:ci-only-password@mongodb:27017/unit_tests?authSource=admin
+      DETECTION_API_KEY: ci-only-api-key
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Validate Compose
+        run: docker compose config --quiet
+      - name: Build worker image
+        run: docker build -t yourcompany-ocr-worker:ci .
+      - name: Verify worker has no ML runtimes
+        run: >-
+          docker run --rm yourcompany-ocr-worker:ci python -c
+          "import importlib.util; import main; assert importlib.util.find_spec('paddle') is None; assert importlib.util.find_spec('torch') is None; print('Worker imports without ML runtimes')"
+      - name: Build CPU model image
+        run: docker build -f services/detection/Dockerfile -t yourcompany-ocr-model:ci .
+      - name: Start standalone model API
+        run: >-
+          docker run -d --name yourcompany-model-smoke
+          -p 127.0.0.1:18000:8000
+          -e DETECTION_API_KEY yourcompany-ocr-model:ci
+      - name: Wait for published API
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:18000/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+      - name: Exercise Paddle and YOLO through published host port
+        run: python scripts/smoke_model_api.py
+      - name: Show model logs
+        if: always()
+        run: docker logs --tail 100 yourcompany-model-smoke || true
+      - name: Remove smoke container
+        if: always()
+        run: docker rm -f yourcompany-model-smoke || true
