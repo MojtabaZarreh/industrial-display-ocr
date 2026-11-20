@@ -1,0 +1,32 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pymongo = "*"
+python-dotenv = "*"
+pydantic-settings = "*"
+pytest = "*"
+pytest-asyncio = "*"
+opencv-python = "*"
+paddlepaddle = "*"
+paddleocr = "*"
+uvicorn = "*"
+pillow = "*"
+ultralytics = "*"
+python-multipart = "*"
+fastapi = "*"
+pydantic = "*"
+opencv-python-headless = "*"
+requests = "*"
+pymssql = "*"
+jdatetime = "*"
+apscheduler = "*"
+pytz = "*"
+httpx = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"

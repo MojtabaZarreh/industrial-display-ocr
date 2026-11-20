@@ -1,0 +1,182 @@
+[
+  {
+    "name": "Measurement Camera 01",
+    "code": "SRC-001",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-01.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 01",
+    "schedule_interval": 1800,
+    "danger_threshold": 35,
+    "unit": "celsius"
+  },
+  {
+    "name": "Measurement Camera 02",
+    "code": "SRC-003",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-02.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 02",
+    "schedule_interval": 1800,
+    "danger_threshold": 35,
+    "unit": "celsius"
+  },
+  {
+    "name": "Measurement Camera 03",
+    "code": "AMP-001",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-03.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 03",
+    "schedule_interval": 60,
+    "danger_threshold": 1000,
+    "unit": "ampere"
+  },
+  {
+    "name": "Measurement Camera 04",
+    "code": "AMP-002",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-04.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 04",
+    "schedule_interval": 60,
+    "danger_threshold": 1000,
+    "unit": "ampere"
+  },
+  {
+    "name": "Measurement Camera 05",
+    "code": "AMP-003",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-05.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 05",
+    "schedule_interval": 60,
+    "danger_threshold": 1000,
+    "unit": "ampere"
+  },
+  {
+    "name": "Measurement Camera 06",
+    "code": "AMP-004",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-06.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 06",
+    "schedule_interval": 60,
+    "danger_threshold": 1000,
+    "unit": "ampere"
+  },
+  {
+    "name": "Measurement Camera 07",
+    "code": "AMP-005",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-07.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 07",
+    "schedule_interval": 60,
+    "danger_threshold": 1000,
+    "unit": "ampere"
+  },
+  {
+    "name": "Measurement Camera 08",
+    "code": "AMP-006",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-08.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 08",
+    "schedule_interval": 60,
+    "danger_threshold": 1000,
+    "unit": "ampere"
+  },
+  {
+    "name": "Measurement Camera 09",
+    "code": "AMP-007",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-09.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 09",
+    "schedule_interval": 60,
+    "danger_threshold": 1000,
+    "unit": "ampere"
+  },
+  {
+    "name": "Measurement Camera 10",
+    "code": "AMP-108",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-10.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 10",
+    "schedule_interval": 60,
+    "danger_threshold": 1000,
+    "unit": "ampere"
+  },
+  {
+    "name": "Measurement Camera 11",
+    "code": "AMP-008",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-11.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 11",
+    "schedule_interval": 60,
+    "danger_threshold": 1000,
+    "unit": "ampere"
+  },
+  {
+    "name": "Measurement Camera 12",
+    "code": "AMP-013",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-12.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 12",
+    "schedule_interval": 60,
+    "danger_threshold": 1000,
+    "unit": "ampere"
+  },
+  {
+    "name": "Measurement Camera 13",
+    "code": "AMP-106",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-13.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 13",
+    "schedule_interval": 60,
+    "danger_threshold": 1000,
+    "unit": "ampere"
+  },
+  {
+    "name": "Measurement Camera 14",
+    "code": "AMP-107",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-14.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 14",
+    "schedule_interval": 60,
+    "danger_threshold": 1000,
+    "unit": "ampere"
+  },
+  {
+    "name": "Measurement Camera 15",
+    "code": "AMP-102",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-15.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 15",
+    "schedule_interval": 60,
+    "danger_threshold": 1000,
+    "unit": "ampere"
+  },
+  {
+    "name": "Measurement Camera 16",
+    "code": "AMP-104",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-16.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 16",
+    "schedule_interval": 60,
+    "danger_threshold": 1000,
+    "unit": "ampere"
+  },
+  {
+    "name": "Measurement Camera 17",
+    "code": "AMP-103",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-17.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 17",
+    "schedule_interval": 60,
+    "danger_threshold": 1000,
+    "unit": "ampere"
+  },
+  {
+    "name": "Measurement Camera 18",
+    "code": "AMP-105",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-18.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 18",
+    "schedule_interval": 60,
+    "danger_threshold": 1000,
+    "unit": "ampere"
+  },
+  {
+    "name": "Measurement Camera 19",
+    "code": "AMP-014",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-19.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 19",
+    "schedule_interval": 60,
+    "danger_threshold": 1000,
+    "unit": "ampere"
+  },
+  {
+    "name": "Measurement Camera 20",
+    "code": "SRC-002",
+    "ip_address": "rtsp://USERNAME:PASSWORD@camera-20.example.invalid:554/STREAM_PATH",
+    "description": "Measurement point 20",
+    "schedule_interval": 900,
+    "danger_threshold": 35,
+    "unit": "celsius"
+  }
+]

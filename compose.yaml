@@ -1,0 +1,113 @@
+name: yourcompany-ocr
+
+x-log-rotation: &log-rotation
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '3'
+
+services:
+  mongodb:
+    image: mongo:8.0
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:?Set MONGO_INITDB_ROOT_PASSWORD}
+    ports:
+      - '127.0.0.1:${MONGODB_HOST_PORT:-27017}:27017'
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          mongosh --quiet --host 127.0.0.1
+          --username "$$MONGO_INITDB_ROOT_USERNAME"
+          --password "$$MONGO_INITDB_ROOT_PASSWORD"
+          --authenticationDatabase admin
+          --eval 'quit(db.adminCommand({ ping: 1 }).ok === 1 ? 0 : 1)'
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging: *log-rotation
+
+  model-api:
+    image: yourcompany-ocr-model:local
+    build:
+      context: .
+      dockerfile: services/detection/Dockerfile
+    restart: unless-stopped
+    init: true
+    environment:
+      DETECTION_API_KEY: ${DETECTION_API_KEY:?Set DETECTION_API_KEY}
+      OCR_MAX_CONCURRENCY: ${OCR_MAX_CONCURRENCY:-4}
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-10485760}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_FORMAT: ${LOG_FORMAT:-text}
+      LOG_COLOR: ${LOG_COLOR:-auto}
+      LOG_TIMEZONE: ${LOG_TIMEZONE:-Asia/Tehran}
+    ports:
+      - '${MODEL_API_BIND:-0.0.0.0}:${MODEL_API_PORT:-8000}:8000'
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    logging: *log-rotation
+
+  worker:
+    image: yourcompany-ocr-worker:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 90s
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      model-api:
+        condition: service_healthy
+    environment:
+      MONGODB_URI: ${DOCKER_MONGODB_URI:?Set DOCKER_MONGODB_URI using hostname mongodb}
+      MONGODB_DATABASE: ${MONGODB_DATABASE:-digit_ocr7}
+      MONGODB_TIMEOUT_MS: ${MONGODB_TIMEOUT_MS:-5000}
+      DETECTION_API_URL: http://model-api:8000
+      DETECTION_API_KEY: ${DETECTION_API_KEY:?Set DETECTION_API_KEY}
+      DATASET_DIR: /app/storage/dataset
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_FORMAT: ${LOG_FORMAT:-text}
+      LOG_COLOR: ${LOG_COLOR:-auto}
+      LOG_TIMEZONE: ${LOG_TIMEZONE:-Asia/Tehran}
+      YOURCOMPANY_ERP_ENABLED: ${YOURCOMPANY_ERP_ENABLED:-true}
+      YOURCOMPANY_EXPORT_DIR: /app/storage/yourcompany_exports
+      YOURCOMPANY_DB_HOST: ${YOURCOMPANY_DB_HOST:-}
+      YOURCOMPANY_DB_USER: ${YOURCOMPANY_DB_USER:-}
+      YOURCOMPANY_DB_PASSWORD: ${YOURCOMPANY_DB_PASSWORD:-}
+      YOURCOMPANY_DB_NAME: ${YOURCOMPANY_DB_NAME:-}
+      GHASEDAK_API_KEY: ${GHASEDAK_API_KEY:-}
+      GHASEDAK_LINE_NUMBER: ${GHASEDAK_LINE_NUMBER:-}
+      DAILY_REPORT_RECIPIENTS: ${DAILY_REPORT_RECIPIENTS:-}
+      DAILY_REPORT_ENABLED: ${DAILY_REPORT_ENABLED:-false}
+    volumes:
+      - worker_data:/app/storage
+      - type: bind
+        source: ./config/camera_preprocessing.json
+        target: /app/config/camera_preprocessing.json
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./infrastructure/database/mongodb/cameras.json
+        target: /app/infrastructure/database/mongodb/cameras.json
+        read_only: true
+        bind:
+          create_host_path: false
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    logging: *log-rotation
+
+volumes:
+  mongodb_data:
+    name: ${MONGODB_VOLUME_NAME:-mongodb_mongodb_data}
+  worker_data:

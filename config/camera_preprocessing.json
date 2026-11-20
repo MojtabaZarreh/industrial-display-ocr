@@ -1,0 +1,487 @@
+{
+  "cameras": {
+    "AMP-006": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "SRC-001": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "SRC-002": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "AMP-014": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "SRC-003": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "SRC-004": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "AMP-001": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "AMP-002": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "AMP-005": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "AMP-007": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "AMP-013": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "AMP-008": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "AMP-108": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "AMP-003": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "AMP-004": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "AMP-106": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "AMP-107": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "AMP-102": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "AMP-104": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "AMP-103": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    },
+    "AMP-105": {
+      "enabled": false,
+      "pipeline": [
+        {
+          "operation": "crop",
+          "region": [
+            0,
+            0,
+            160,
+            80
+          ]
+        },
+        {
+          "operation": "mask",
+          "rectangles": []
+        },
+        {
+          "operation": "weighted_adjustment",
+          "alpha": 1.0,
+          "beta": 0
+        }
+      ]
+    }
+  }
+}
