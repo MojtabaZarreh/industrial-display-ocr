@@ -1,198 +1,305 @@
-# YourCompany digit OCR
+<div align="center">
 
-Camera capture and per-source preprocessing feed the detection API (Paddle for
-AMP sources, YOLO for SRC sources). Accepted readings are stored in MongoDB and
-delivered to the existing SQL Server ERP through an outbox. Nonzero anomalies use
-the previous accepted value for ERP; zeros and returns to the preceding running
-range are accepted. Exhausted camera captures queue -2 without routine
-tracebacks. See [reading policy](docs/reading-delivery.md).
+# Industrial Display OCR
 
-## Local configuration
+**Turn existing cameras and digital displays into timestamped operational data.**
+
+![Capture, read, validate and deliver](docs/overview.svg)
+
+[![Tests](https://github.com/MojtabaZarreh/industrial-display-ocr/actions/workflows/tests.yml/badge.svg)](https://github.com/MojtabaZarreh/industrial-display-ocr/actions/workflows/tests.yml)
+![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12-3776AB?logo=python&logoColor=white)
+![PaddleOCR](https://img.shields.io/badge/PaddleOCR-PP--OCRv6-0066FF)
+![Docker](https://img.shields.io/badge/Docker-worker%20%2B%20model-2496ED?logo=docker&logoColor=white)
+
+[Quick start](#-quick-start) · [Architecture](docs/architecture.md) · [Models & training](docs/models-and-training.md) · [Operations](docs/operations.md)
+
+</div>
+
+Industrial Display OCR reads numeric values from camera-visible instruments and
+connects them to measurement history, an ERP system, or local daily reports.
+It combines **PaddleOCR sequence recognition**, **YOLO digit detection**,
+per-camera preprocessing, temporal anomaly checks and durable delivery.
+
+The project grew out of a real industrial deployment collecting motor-current
+and temperature readings, forwarding them to an ERP system and sending daily
+temperature summaries by SMS. This repository presents the reusable software;
+camera examples, source descriptions and preprocessing profiles are generic.
+
+## 🎯 Where it fits
+
+| Application | What the software provides |
+| --- | --- |
+| Motor and production-line monitoring | Periodic current readings; valid zeros preserve evidence of a possible stop. |
+| Server rooms and electrical rooms | Temperature history and a daily SMS summary. |
+| Legacy digital instruments | Camera-based collection when a direct data interface is unavailable. |
+| Dataset development | Preprocessed crops and predictions for review and future training. |
+| Future instrument types | Weight/speed unit metadata; new instruments still need suitable models, routes and scale rules. |
+
+A camera observes the display. Whether that observation means an equipment
+fault depends on the instrument and operating context.
+
+## ✨ What is included
+
+- 📷 **Multiple RTSP sources:** independent schedules and concurrent camera workers.
+- 🧠 **Two recognition paths:** complete numeric strings with PaddleOCR and individual digits with YOLO.
+- 🛠️ **Per-source preprocessing:** crop, mask, intensity adjustment, grayscale and denoising.
+- 🟢 **Zero-aware validation:** retain valid stops and accept recovery to the preceding operating range.
+- 📦 **Durable delivery:** a MongoDB outbox separates observations from destination writes.
+- 📨 **Daily SMS:** temperature minimum, maximum, average and record count through Ghasedak.
+- 🗂️ **Reviewable samples:** images, predictions, timestamps, preprocessing metadata and hashes.
+- 🐳 **Separate containers:** a lightweight worker and an independently callable model API.
+
+## 🔎 How it works
+
+1. A scheduled worker opens the camera stream, captures a fresh frame and closes it.
+2. A source-specific preprocessing profile isolates and cleans the target display.
+3. The model API selects a backend from the camera-code prefix.
+4. The worker validates the response, extracts a number and checks accepted history.
+5. MongoDB retains the reading; a delivery event is queued when the policy permits it.
+6. A separate delivery worker sends the selected value to ERP or a local report.
+
+```mermaid
+flowchart TD
+    W["Camera worker + preprocessing"] --> M["Model API: PaddleOCR / YOLO"]
+    M --> V["Validation + anomaly policy"]
+    V --> D["MongoDB history + outbox"]
+    D --> E["SQL Server ERP"]
+    D --> F["SQLite journal + HTML report"]
+    E --> S["Daily temperature SMS"]
+```
+
+The collector saves the already-preprocessed input sent to inference. Reviewed
+samples can be reused without repeating camera ROI processing; model-specific
+resize/normalization still applies during training.
+
+### Concurrency and timing
+
+The production worker uses a **32-thread camera pool**, with at most **one job
+in flight per source**. Ampere sources have a **60-second target cadence**;
+other units use their configured `schedule_interval`.
+
+FastAPI offloads blocking inference to threads and admits up to
+`OCR_MAX_CONCURRENCY` requests, default **4**. Each loaded backend also has a
+prediction lock, so this does not mean four concurrent executions of one model.
+Delivery and daily reports run separately from camera scheduling.
+
+Samples keep their actual observation time. Slow cameras, model queues or
+network failures can reduce the number of observations. There is no historical
+backfill or guarantee of 1,440 successful readings per day.
+See [architecture and timing](docs/architecture.md).
+
+## 🧠 Models and measured accuracy
+
+| Route | Backend | Task | Default artifact |
+| --- | --- | --- | --- |
+| `AMP-*` | PaddleOCR `PP-OCRv6_medium_rec` | Recognize a cropped numeric sequence | `services/weights/medium_digit_rec_v2/inference/` |
+| `SRC-*` | Ultralytics YOLO | Detect digits and assemble them left to right | `services/weights/model1-new.pt` |
+
+The Paddle recognizer uses a digit vocabulary and **3 × 64 × 320** input
+configuration. Runtime extraction accepts **unsigned integer readings**.
+Temperature decimal placement is a reporting rule, not OCR decimal-point
+recognition. The API expects an already-preprocessed display image.
+
+### Recorded PaddleOCR experiment
+
+The supplied notebook's recorded `mixed` run produced:
+
+| Personal hold-out split | Images | Exact sequence accuracy ↑ | Character error rate ↓ |
+| --- | ---: | ---: | ---: |
+| Validation | 148 | **93.92%** | **2.90%** |
+| Test | 152 | **84.87%** | **7.55%** |
+
+Exact accuracy requires the **entire string** to match. CER counts character
+insertions, deletions and substitutions. These are historical notebook results
+on one private-data split, not production-wide accuracy or scores for every
+bundled checkpoint. The evaluated checkpoint was not fingerprint-linked to the
+bundled runtime weights. Neither hold-out split contains zero-only examples;
+zero-specific OCR accuracy is **not measured**. A YOLO metric is not available.
+
+See the sanitized [evaluation record](docs/evaluation.json) and
+[evaluation notes](docs/models-and-training.md#recorded-evaluation).
+Confidence scores and software test results are separate from OCR accuracy.
+
+## 📚 Training data and notebook
+
+The [Colab notebook](notebooks/PP_OCRv6_medium_3datasets.ipynb) combines private
+camera samples with **three external sources**:
+
+| Source | Used in the recorded experiment | Role |
+| --- | ---: | --- |
+| Private display crops | 1,692 unique: 1,392 train / 148 validation / 152 test | Target-domain training/evaluation; images are not included. |
+| [MiXaiLL76 / 7SEG_OCR](https://huggingface.co/datasets/MiXaiLL76/7SEG_OCR) | 1,643 accepted from 3,333 source rows | External training sequences after label-policy and hold-out exclusions. |
+| [chakibmed / bp-monitor-seven-segment](https://huggingface.co/datasets/chakibmed/bp-monitor-seven-segment) | 388 single-digit crops | Training only; full multi-row screens are not given a single-number label. |
+| [renjithsasidharan / seven-segment-ocr](https://github.com/renjithsasidharan/seven-segment-ocr) | 319 recognition crops | Training only, using original text annotations. |
+
+The run used **3,742 unique training images** before sampling and augmentation.
+External images do not enter personal validation/test sets. Exact pixel
+duplicates are checked, and label-based splitting excludes public strings
+matching personal hold-out labels. Session/device grouping is available for
+stronger separation of related frames.
+
+All 45 notebook cells are included with saved outputs cleared. The workflow
+covers audits, augmentation, training, validation, testing and inference export.
+Its current recovery cell skips optional personal adaptation; see the
+[training guide](docs/models-and-training.md#reproduce-or-extend-the-experiment).
+
+## 🟢 Zeros, anomalies and unavailable cameras
+
+![Illustrative observations and selected delivery values](docs/reading-example.svg)
+
+*Illustrative policy example, not a production screenshot.*
+
+After OCR validation, a numeric zero is always accepted. Nonzero values are
+compared to the median of up to **10 preceding accepted nonzero readings**.
+With at least **3** references, a change greater than **50%** of that median is
+anomalous by default.
+
+| Observation | Stored / delivered behavior |
+| --- | --- |
+| Valid `0` | Store and queue every zero; preserve the nonzero baseline. |
+| Return from `0` to the usual range | Accept against the retained baseline. |
+| Nonzero spike, e.g. `819` after values around `120` | Retain the raw anomaly; deliver the latest preceding accepted value at the current observation time. |
+| Empty, malformed or low-confidence OCR | Retain for review; do not convert to `0` or a camera-failure marker. |
+| Camera capture failure | Queue `-2` for that failed observation; exclude it from accepted OCR history and the anomaly baseline. |
+
+Capture uses **one attempt**, with 5-second open and read timeouts. The next
+scheduled capture still runs. Persistent out-of-range changes are not
+automatically learned as a new baseline. This supports downstream stop analysis;
+immediate stop/spike SMS alarms are not implemented.
+See the [complete reading policy](docs/reading-delivery.md).
+
+## 🚀 Quick start
+
+Use Docker Compose for the worker, model API and MongoDB:
+
+```sh
+git clone https://github.com/MojtabaZarreh/industrial-display-ocr.git
+cd industrial-display-ocr
+```
 
 Copy `.env.example` to `.env`, and
 `infrastructure/database/mongodb/cameras.example.json` to
-`infrastructure/database/mongodb/cameras.json`. Replace the example RTSP URLs
-with real URLs and configure database/model settings locally. URL-encode reserved
-characters in URL passwords. Quote `.env` secrets containing `$` with single
-quotes. Environment variables exported by the launching shell take precedence
-over `.env`; configuration is loaded once, so restart processes after changes.
+`infrastructure/database/mongodb/cameras.json`. Fill your RTSP URLs, then
+calibrate and enable profiles in `config/camera_preprocessing.json`. Included
+profiles are disabled examples.
 
-For a new MongoDB volume, set `MONGO_INITDB_ROOT_PASSWORD` and use the same
-credentials in `MONGODB_URI`. Keep `MONGODB_DATABASE` consistent with the URI.
-From the repository root:
-
-```sh
-docker compose --env-file .env -f infrastructure/database/mongodb/compose.yaml up -d --wait
-python -m infrastructure.database.mongodb.import_measurement_points infrastructure/database/mongodb/cameras.json
-```
-
-Initialization credentials do not modify users in an existing MongoDB volume.
-No volume deletion or production data migration is performed by this commit.
-
-## Source units
-
-Each source accepts one `unit` field:
-
-| unit | Meaning |
-| --- | --- |
-| `celsius` | Temperature in degrees Celsius |
-| `ampere` | Electric current in amperes |
-| `kilogram` | Weight in kilograms |
-| `meters_per_second` | Speed in meters per second |
-
-Existing files without this field remain supported: SRC defaults to `celsius`
-and AMP to `ampere`. An explicit unit overrides the prefix. Unknown prefixes
-require an explicit supported unit. Re-running the import adds the inferred unit
-to existing MongoDB sources without changing their `_id`. Legacy documents also
-get the default unit on reads, before migration. Weight and speed are metadata
-support; adding a new OCR camera prefix still requires an inference routing rule.
-
-Example fragment:
-
-```json
-{"code": "SRC-001", "unit": "celsius"}
-```
-
-## Daily temperature report
-
-The current displays/ERP store temperature in **tenths of a degree**: `217` is
-reported as `21.70` degrees Celsius. The conversion is applied exactly once,
-when generating the daily report, before min/max/mean. It is not inferred from
-the magnitude of the value. Raw OCR, MongoDB history, outbox and ERP inserts
-remain unchanged; ampere values are not divided. Zero is included in statistics;
-the camera-failure sentinel `-2` and non-finite values are excluded.
-
-The scheduled report selects active `celsius` sources by their ERP description;
-ampere/weight/speed sources are excluded. Descriptions must match `RecordType`
-in SQL Server. Without a source repository, the standalone service retains its
-three legacy temperature locations. Do not feed already-converted Celsius data
-to this raw-value report; mixed historical scales need separate reconciliation.
-
-Set these values in your local `.env` and restart `main.py` to enable SMS:
+Set a shared `DETECTION_API_KEY`, MongoDB credentials and consistent database
+names in `.env`. For a first run without an ERP connection:
 
 ```dotenv
+YOURCOMPANY_ERP_ENABLED=false
+DAILY_REPORT_ENABLED=false
+MODEL_API_BIND=127.0.0.1
+```
+
+The existing adapter retains its `YOURCOMPANY_*` setting names. Fill the required
+MongoDB settings in [`.env.example`](.env.example): the Docker URI uses host
+`mongodb`, while host-side commands use `127.0.0.1`.
+
+```sh
+docker compose build
+docker compose up -d --wait mongodb model-api
+docker compose run --rm --no-deps worker python -m infrastructure.database.mongodb.import_measurement_points infrastructure/database/mongodb/cameras.json
+docker compose up -d worker
+docker compose logs -f --tail 100 worker model-api
+```
+
+Interactive API documentation is at `http://localhost:8000/docs`. Direct request:
+
+```sh
+curl -X POST http://localhost:8000/predict/AMP-001 -H "X-API-Key: YOUR_LONG_RANDOM_KEY" -F "file=@preprocessed-display.jpg"
+```
+
+On PowerShell, use `curl.exe`. `GET /health` is unauthenticated process liveness;
+models load lazily on the first matching request. See [Docker deployment](docs/docker.md)
+for standalone containers, external access, volumes and logs, or
+[operations](docs/operations.md#environment-and-api-access) for local Uvicorn execution.
+
+## 📊 ERP or local reports
+
+With `YOURCOMPANY_ERP_ENABLED=true`, selected values go to SQL Server through a
+retryable MongoDB outbox. The supplied adapter targets `ServerRoomTemp`; map it
+to your ERP schema before enabling ERP mode. SQL delivery is retryable, not a
+distributed exactly-once transaction.
+
+With `false`, delivery writes a **SQLite journal** and **daily HTML reports**
+with per-camera counts and a filterable record table: observation time,
+file-write time, unit, raw/displayed values, zeros and unavailable markers.
+
+```sh
+docker compose cp worker:/app/storage/yourcompany_exports ./yourcompany_exports
+```
+
+Open `readings-YYYY-MM-DD.html`. Keep `records.sqlite3` alongside the reports;
+it deduplicates local retries. Existing ERP events pause in file mode;
+already-queued file events remain file-bound. See [delivery behavior](docs/operations.md#delivery-and-local-reports).
+
+## 📨 Daily temperature SMS
+
+With ERP delivery and reporting enabled, the scheduler sends the preceding
+Tehran calendar day's summary at **06:01 Asia/Tehran**. Sections contain minimum,
+maximum, average and record count for active Celsius sources. Descriptions must
+match ERP `RecordType` values.
+
+```dotenv
+YOURCOMPANY_ERP_ENABLED=true
 DAILY_REPORT_ENABLED=true
 GHASEDAK_API_KEY=YOUR_KEY
 GHASEDAK_LINE_NUMBER=YOUR_LINE
-DAILY_REPORT_RECIPIENTS=YOUR_RECIPIENTS
+DAILY_REPORT_RECIPIENTS=RECIPIENT_1,RECIPIENT_2
 ```
 
-ERP connection settings are also required. Reports run at 06:01 Asia/Tehran for
-the preceding Tehran calendar day. The example configuration disables automatic
-SMS until explicitly enabled.
+Configure `YOURCOMPANY_DB_*` credentials too. Raw temperature `217` becomes
+**21.70 °C** before report statistics; stored OCR/ERP values stay unchanged.
+Zero is included; `-2` and non-finite values are excluded. File mode does not
+produce ERP-backed SMS reports. See [the reporting example](docs/operations.md#daily-sms-reports).
 
-## Run
+## 🗂️ Data for the next model
 
-For the separate Docker worker/model images, external API access and deployment
-commands, see [Docker deployment and logs](docs/docker.md).
+Samples use `CAMERA_CODE/YYYY-MM-DD/SAMPLE_ID/`, containing `image.png` and
+`metadata.json`. Metadata includes predictions, timestamps, dimensions, a
+SHA-256 hash and the preprocessing profile. The PNG contains pixels decoded
+from the JPEG actually sent to inference.
 
-Use the existing Pipenv environment (`pipenv sync`) for the model dependencies.
-For a pip-based worker installation, `pip install -r requirements.txt` installs
-the worker/report dependencies; the detection service additionally requires
-its own requirements, PaddleOCR/PaddlePaddle and compatible model weights.
+Predictions are **candidate labels**, not ground truth. New samples have
+`verified_label=null` and `review_status="pending"`; review/correct them before
+training. Collection does not automatically retrain or promote a model.
+See [the data lifecycle](docs/architecture.md#dataset-lifecycle).
 
-```sh
-pipenv run python -m services.detection
-pipenv run python main.py
-```
-
-Run these commands in separate terminals. Set the same local `DETECTION_API_KEY`
-for both processes. Prediction requests require the `X-API-Key` header; health
-checks are public. Use TLS through a reverse proxy when calling across untrusted
-networks. The Docker model port is published on the host and is independently
-callable without the worker or Compose.
-
-## Test and project layout
+## 🧪 Tests and project map
 
 ```sh
 python -m pip install -r tests/requirements-unit.txt
 python -m pytest
 ```
 
-`tests/unit/` is the default suite. It uses in-memory MongoDB and fake ERP/SMS
-clients; socket connections are blocked during tests. It needs no production
-credentials, running databases, model weights or Paddle/YOLO packages.
-GitHub Actions runs compilation and this suite for pushes and pull requests
-on Python 3.11 and 3.12, with read-only repository permissions and no secrets.
+The isolated suite uses fake cameras/models/ERP/SMS and in-memory MongoDB.
+GitHub Actions runs it on Linux/Windows and Python 3.11/3.12, then builds both
+containers and exercises both routes. `scripts/manual/` contains opt-in checks
+that contact actual services when explicitly run.
 
-`scripts/manual/` contains opt-in checks for actual cameras, SQL Server, MongoDB
-and SMS. Run only against your intended environment, for example:
+| Path | Responsibility |
+| --- | --- |
+| `application/` | Capture, preprocessing, validation, collection, delivery and reporting. |
+| `services/detection/`, `services/models/` | FastAPI endpoints and model adapters. |
+| `domain/` | Measurement units and domain models. |
+| `infrastructure/` | MongoDB repositories, ERP/file adapters and SMS. |
+| `config/` | Environment settings, logging and preprocessing profiles. |
+| `notebooks/` | Training and export workflow. |
+| `tests/unit/`, `scripts/manual/` | Isolated tests and manual integration checks. |
 
-```sh
-pipenv run python -m scripts.manual.test_processing_service
-```
+## 📖 Documentation and acknowledgements
 
-Manual SMS scripts send real messages when explicitly executed. Obsolete tests
-for a removed scheduling module were removed; the old latest-reading check now
-tests the existing recent-history API. Runtime images/datasets, local settings,
-Python caches and training checkpoints are ignored. Previously committed sample
-capture images are removed from the current tree; model inference weights remain.
+- [Architecture, concurrency and data lifecycle](docs/architecture.md)
+- [Models, datasets, evaluation and training](docs/models-and-training.md)
+- [Configuration, reports and troubleshooting](docs/operations.md)
+- [Reading and anomaly delivery policy](docs/reading-delivery.md)
+- [Docker deployment and logs](docs/docker.md)
 
-## Choose ERP or local file delivery
-
-```env
-YOURCOMPANY_ERP_ENABLED=false
-YOURCOMPANY_EXPORT_DIR=infrastructure/storage/yourcompany_exports
-```
-
-`true` (default) sends new readings to YOURCOMPANY ERP using the existing SQL settings.
-`false` writes new delivery records locally without constructing an ERP SQL
-client or running ERP-backed daily reports. MongoDB is still required for source
-configuration, readings and the durable delivery outbox. Restart the worker after
-changing this flag; stop the old worker first.
-
-Open `infrastructure/storage/yourcompany_exports/readings-YYYY-MM-DD.html` in a browser.
-There is one self-contained report per Tehran observation day (Gregorian filename),
-with a per-camera summary and a filterable record table. Counts include total
-records, zero-valued deliveries (including zero selected by anomaly fallback)
-and unavailable-camera markers (-2); active sources with
-no records appear with zero counts. The table contains source code/name/description,
-unit, readable value, raw ERP value, exact observation time and local file-write
-time, both with the Tehran offset. Celsius raw 217 is displayed as 21.7; -2 stays
-an unavailable marker. Only records selected by the existing ERP delivery policy
-are exported: unvalidated/review OCR results remain in MongoDB as before.
-
-A local `records.sqlite3` journal commits each event once before acknowledging the
-outbox. Keep it with the HTML files: it prevents duplicate counts after retries
-or restarts and rebuilds reports after interruptions. Reports refresh at most
-once per 60 seconds, when the delivery worker next polls/processes an event, and
-flush on graceful shutdown. Reopen/refresh the browser to see updates. The local
-journal and generated reports are excluded from Git by the existing storage rule.
-Back up the export directory if local records must be retained.
-
-The destination is fixed when a new event is queued. File events are never sent
-to ERP after switching back to `true`; remaining file events still drain locally.
-Older ERP events (including legacy events without a destination field) pause
-while `false` and resume through ERP when `true`. Already-delivered records are
-not exported retroactively. No historical minute records or backfill are generated.
-
-In Docker, reports and the journal live in `/app/storage/yourcompany_exports` on the
-existing persistent `worker_data` volume. Copy them to the host when needed:
-
-```sh
-docker compose cp worker:/app/storage/yourcompany_exports ./yourcompany_exports
-```
-
-If the output directory is unwritable or a write fails, the delivery event remains
-retryable in the outbox; there is no automatic SQL fallback in file mode. Atomic
-HTML replacement preserves the previous complete report if rendering fails.
-
-
-## Training notebook
-
-The Colab notebook [PP_OCRv6_medium_3datasets.ipynb](notebooks/PP_OCRv6_medium_3datasets.ipynb)
-contains the three-dataset training workflow, validation, export and inference
-checks. All 45 source cells are included. Saved execution outputs and execution
-metadata are cleared, and checkpoint inspection/recovery uses the configured run
-rather than a fixed personal run directory. GPU training has not been rerun as
-part of packaging this repository. Configure your own Drive folder and datasets
-before running the notebook.
-
-Camera examples use synthetic descriptions and reserved example hostnames.
-Preprocessing profiles are disabled examples: set an appropriate ROI for your
-own camera and enable the profile before collecting real measurements. Never
-commit camera credentials, captures or exported reports.
-
-Keep this repository private until code, dataset and model redistribution rights
-have been reviewed. Upstream author credits and dataset URLs in the notebook
-are retained; replacing a company name does not replace upstream licenses.
+Built on [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR),
+[PaddlePaddle](https://github.com/PaddlePaddle/Paddle),
+[Ultralytics](https://github.com/ultralytics/ultralytics), OpenCV, FastAPI and MongoDB.
+Dataset authors are credited above and in the training guide. Dependencies,
+external datasets and pretrained weights retain their own licenses and
+attribution requirements. This repository does not add a license grant for
+third-party assets. Private camera images and credentials are not included.
