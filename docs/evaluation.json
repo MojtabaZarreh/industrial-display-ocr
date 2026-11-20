@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "experiment": "recorded_three_external_sources_mixed_run",
+  "model_family": "PP-OCRv6_medium_rec",
+  "selected_stage": "mixed",
+  "provenance": {
+    "source": "Saved outputs of the user-supplied PP_OCRv6_medium_3datasets.ipynb before output stripping",
+    "zero_based_output_cell_indices": [
+      9,
+      11,
+      13,
+      33,
+      35,
+      43
+    ],
+    "status": "historical aggregate transcription; not rerun for this documentation update",
+    "private_images_redistributed": false,
+    "evaluated_checkpoint_sha256": null,
+    "bundled_runtime_checkpoint_link_verified": false
+  },
+  "data": {
+    "personal_input_rows": 2087,
+    "personal_unique_images": 1692,
+    "personal_train": 1392,
+    "personal_validation": 148,
+    "personal_test": 152,
+    "sevenseg_source_rows": 3333,
+    "sevenseg_training_accepted": 1643,
+    "bp_digit_training_accepted": 388,
+    "renjith_training_accepted": 319,
+    "external_training_total": 2350,
+    "unique_training_total": 3742,
+    "personal_split_by": "label",
+    "seed": 42
+  },
+  "validation": {
+    "exact_matches": 139,
+    "samples": 148,
+    "exact_accuracy": 0.9391891891891891,
+    "cer": 0.029045643153526972,
+    "zero_samples": 0,
+    "zero_exact_accuracy": null
+  },
+  "test": {
+    "exact_matches": 129,
+    "samples": 152,
+    "exact_accuracy": 0.8486842105263158,
+    "cer": 0.07554671968190854,
+    "zero_samples": 0,
+    "zero_exact_accuracy": null
+  },
+  "yolo_evaluation": null
+}
